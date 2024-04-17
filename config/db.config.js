@@ -2,11 +2,7 @@ const Mongoose = require('mongoose');
 
 exports.connectDB = () => {
     Mongoose.connect(
-        process.env.DB_URI,
-        {
-            useNewUrlParser: true,
-            useUnifiedTopology: true
-        })
+        process.env.MONGO_URI)
         .then(() => {
             console.log("Connected to DB Successfully!");
         })
