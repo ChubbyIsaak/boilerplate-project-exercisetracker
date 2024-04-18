@@ -80,12 +80,33 @@ App.post('/api/users/:_id/exercises', async (req, res) => {
 // access all logs of any user
 App.get('/api/users/:_id/logs', async (req, res) => {
   try {
+    const { from, to, limit } = req.query;
+
+    // Fetch user log by ID
     const userLog = await LogModel.findById(req.params._id);
     if (!userLog) {
       return res.status(404).send('User Log Not Found!');
     }
 
-    const logObj = userLog.log.map(obj => ({
+    // Filter the log based on date range if 'from' and 'to' are specified
+    let filteredLogs = userLog.log;
+    if (from) {
+      const fromDate = new Date(from);
+      filteredLogs = filteredLogs.filter(log => new Date(log.date) >= fromDate);
+    }
+    if (to) {
+      const toDate = new Date(to);
+      toDate.setHours(23, 59, 59); // Include the entire 'to' day
+      filteredLogs = filteredLogs.filter(log => new Date(log.date) <= toDate);
+    }
+
+    // Apply the limit to the number of logs returned
+    if (limit) {
+      filteredLogs = filteredLogs.slice(0, parseInt(limit));
+    }
+
+    // Convert dates for output
+    const logObj = filteredLogs.map(obj => ({
       description: obj.description,
       duration: obj.duration,
       date: new Date(obj.date).toDateString()
@@ -94,13 +115,14 @@ App.get('/api/users/:_id/logs', async (req, res) => {
     res.json({
       _id: userLog._id,
       username: userLog.username,
-      count: userLog.count,
+      count: filteredLogs.length, // Count of logs after filtering
       log: logObj
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 
 
 const CONN_PORT = process.env.PORT || 3358;
